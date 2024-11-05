@@ -31,4 +31,4 @@ model = AutoModelForSequenceClassification.from_pretrained('distilbert-base-unca
 for param in model.base_model.parameters():
     param.requires_grad = True
 
-print(model)
+# print(model)
