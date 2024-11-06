@@ -1,6 +1,8 @@
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, DataCollatorWithPadding, Trainer, TrainingArguments
 import numpy as np
+import pandas as pd
+
 
 # Load the sms_spam dataset
 # use the train_test_split method to split it into train and test
@@ -45,10 +47,10 @@ trainer = Trainer(
     args=TrainingArguments(
         output_dir="./data/spam_not_spam",
         # Set the learning rate
-        learning_rate=0.1,
+        learning_rate=2e-5,
         # Set the per device train batch size and eval batch size
         per_device_train_batch_size=16,  
-        per_device_eval_batch_size=64, 
+        per_device_eval_batch_size=16, 
         # Evaluate and save the model after each epoch
         evaluation_strategy="epoch",
         save_strategy="epoch",
@@ -64,3 +66,26 @@ trainer = Trainer(
 )
 
 trainer.train()
+
+#Evaluate model
+trainer.evaluate()
+
+#View results in a dataframe
+# Make a dataframe with the predictions and the text and the labels
+
+items_for_manual_review = tokenized_dataset["test"].select(
+    [0, 1, 22, 31, 43, 292, 448, 487]
+)
+
+results = trainer.predict(items_for_manual_review)
+df = pd.DataFrame(
+    {
+        "sms": [item["sms"] for item in items_for_manual_review],
+        "predictions": results.predictions.argmax(axis=1),
+        "labels": results.label_ids,
+    }
+)
+# Show all the cell
+pd.set_option("display.max_colwidth", None)
+df
+print(df)
