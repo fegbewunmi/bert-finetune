@@ -1,5 +1,6 @@
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, DataCollatorWithPadding, Trainer, TrainingArguments
+import numpy as np
 
 # Load the sms_spam dataset
 # use the train_test_split method to split it into train and test
@@ -32,3 +33,34 @@ for param in model.base_model.parameters():
     param.requires_grad = True
 
 # print(model)
+
+#train model using Trainer class
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=1)
+    return {"accuracy": (predictions == labels).mean()}
+
+trainer = Trainer(
+    model=model,
+    args=TrainingArguments(
+        output_dir="./data/spam_not_spam",
+        # Set the learning rate
+        learning_rate=0.1,
+        # Set the per device train batch size and eval batch size
+        per_device_train_batch_size=16,  
+        per_device_eval_batch_size=64, 
+        # Evaluate and save the model after each epoch
+        evaluation_strategy="epoch",
+        save_strategy="epoch",
+        num_train_epochs=2,
+        weight_decay=0.01,
+        load_best_model_at_end=True,
+    ),
+    train_dataset=tokenized_dataset["train"],
+    eval_dataset=tokenized_dataset["test"],
+    tokenizer=tokenizer,
+    data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
+    compute_metrics=compute_metrics,
+)
+
+trainer.train()
